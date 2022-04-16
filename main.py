@@ -7,6 +7,7 @@ Initial Code write: Michael Hagans, 4.13.2022
 from cgi import test
 from code import interact
 import csv
+import email
 import logging
 import os
 import re
@@ -20,7 +21,10 @@ from datetime import *
 from paramiko_expect import SSHClientInteraction
 from socket import timeout
 
-logging.basicConfig(format="%(lineno)d | %(utctime)s | %(levelname)s | %(message)s")
+logger = logging.getLogger()
+logging.basicConfig(filename='logs.log', format='%(lineno)s %(asctime)s %(filename)s: %(message)s', filemode='w')
+#logging.basicConfig(filename='logs.log', format='%(levelname)s: %(message)s', filemode='w')
+logger.setLevel(logging.DEBUG)
 
 
 class Operations:
@@ -41,28 +45,19 @@ class Operations:
         interact = SSHClientInteraction(
             ssh_client,timeout=20,display=False
         )
-        try:
-            interact.expect('admin:')
-        except timeout:
-            logging.warning('Timed out making SSH connection to server')
+        interact.expect('admin:')
         interact.send('show status')
         interact.expect('admin:')
         output = happy_converter(interact.current_output_clean)
-        pattern = "up\s[0-9]*\sdays"
-        #test_string = '09:51:55 up 40 days, 20:41,  1 user,  load average: 0.12, 0.09, 0.09'
-        result = re.match(pattern, output)
-        if result:
-            logging.info('uptime is: ', result)
+        pattern = "up\s[0-9]*\s[a-z]*"
+        match = re.search(pattern, output[10])
+        if match:
+            print(f'uptime is: {match}')
+            logger.info(f'uptime is: {match}')
         else:
-            pattern = "up"
-            result = re.match(pattern, output)
-            if result:
-                logging.info('Uptime is less than 1 day')
-                return 'uptime is less than 1 day'
-            else:
-                logging.warning('Search for uptime unsuccessful')  
+            logger.warning(f'Search for uptime unsuccessful: {self.host}')  
         ssh_client.close()          
-        return result
+        return match
 
     def get_version(self):
         """ Gathers Version from server """
@@ -119,7 +114,8 @@ def main():
             if email == 'Unrecognized input for email':
                 email_results()
         except Exception as err:
-            logging.warning('Error occurred: ', str(err))
+            print(f'Error occurred while running your job: {str(err)}')
+            logger.warning(f'Error occurred: {str(err)}')
     elif pull_previous_jobs == 'y':
         print('...one moment please.\n')
         database.fetch_jobs()
