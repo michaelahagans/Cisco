@@ -1,20 +1,26 @@
 """
-Script / Utility for project 1
+Script / Utility for Cisco Recruitment project 1
 
 Initial Code write: Michael Hagans, 4.13.2022
 """
 
+from cgi import test
+from code import interact
 import csv
 import logging
 import os
 import re
 import sqlite3
-from datetime import *
-
+import threading
 import paramiko
 import requests
-
 import database
+
+from datetime import *
+from paramiko_expect import SSHClientInteraction
+from socket import timeout
+
+logging.basicConfig(format="%(lineno)d | %(utctime)s | %(levelname)s | %(message)s")
 
 
 class Operations:
@@ -26,11 +32,37 @@ class Operations:
         self.host = host
         self.base_url = f'https://{host}:8443/axl/'
 
-    def uptime(self):
-        """ Gathers Uptime from server """
-        uptime = '228 Days'
-        print('uptime is: ', str(uptime))
-        return uptime
+    def uptime(self) -> str :
+        """ Gathers Uptime from server via ssh """
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_client.connect(hostname=self.host,username=self.username,password=self.password)
+        # remote_connection = ssh_client.invoke_shell()
+        interact = SSHClientInteraction(
+            ssh_client,timeout=20,display=False
+        )
+        try:
+            interact.expect('admin:')
+        except timeout:
+            logging.warning('Timed out making SSH connection to server')
+        interact.send('show status')
+        interact.expect('admin:')
+        output = happy_converter(interact.current_output_clean)
+        pattern = "up\s[0-9]*\sdays"
+        #test_string = '09:51:55 up 40 days, 20:41,  1 user,  load average: 0.12, 0.09, 0.09'
+        result = re.match(pattern, output)
+        if result:
+            logging.info('uptime is: ', result)
+        else:
+            pattern = "up"
+            result = re.match(pattern, output)
+            if result:
+                logging.info('Uptime is less than 1 day')
+                return 'uptime is less than 1 day'
+            else:
+                logging.warning('Search for uptime unsuccessful')  
+        ssh_client.close()          
+        return result
 
     def get_version(self):
         """ Gathers Version from server """
@@ -50,6 +82,9 @@ class Operations:
         print('exposed ports are: ', str(exp_ports))
         return exp_ports
 
+def happy_converter(text):
+    """ returns plit lines"""
+    return text.splitlines()
 
 def email_results():
     """ Prompts and handles email of results """
@@ -65,7 +100,8 @@ def email_results():
 
 def main():
     """ Main operation of script """
-    pull_previous_jobs = input('Would you like to view previous jobs? Enter y/n: ')
+    pull_previous_jobs = input(
+        'Would you like to view previous jobs? Enter y/n: ')
     if pull_previous_jobs == 'n':
         username = input('Enter username: ')
         password = input('Enter password: ')
@@ -83,8 +119,7 @@ def main():
             if email == 'Unrecognized input for email':
                 email_results()
         except Exception as err:
-            logging.warning('Error occurred: %s', str(err))
-            print('The following error occurred while attempting to gather data: ', str(err))
+            logging.warning('Error occurred: ', str(err))
     elif pull_previous_jobs == 'y':
         print('...one moment please.\n')
         database.fetch_jobs()
