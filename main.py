@@ -5,6 +5,7 @@ Operation: The script will prompt for creds, ip and device type then perform ope
 present the user with the option to email the results as well as view past successful jobs. 
 
 Initial Code write: Michael Hagans, 4.13.2022
+
 """
 
 from cgi import test
@@ -45,7 +46,7 @@ logger = logging.getLogger()
 logging.basicConfig(filename='logs.log',
                     format='%(lineno)s %(asctime)s %(filename)s: %(message)s', filemode='w')
 #logging.basicConfig(filename='logs.log', format='%(levelname)s: %(message)s', filemode='w')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Operations:
@@ -91,6 +92,9 @@ class Operations:
             print('uptime is 1 week, 2 hours, 12 minutes')
             logger.info('uptime is: 1 week, 2 hours, 12 minutes')
             return 'uptime is 1 week, 2 hours, 12 minutes'
+        else:
+            print(f'Unsupported device type: {self.type}')
+            logger.warning(f'Unsupported device type {self.type}')
 
     def get_version(self) -> str:
         """ Gathers Version from server """
@@ -120,6 +124,9 @@ class Operations:
             print('ios XE 16')
             logger.info('ios XE 16')
             return 'ios XE 16'
+        else:
+            print(f'Unsupported device type {self.type}')
+            logger.warning(f'Unsupported device type {self.type}')
 
     def get_performance(self) -> list:
         """ Gathers Performance from server """
@@ -160,13 +167,16 @@ class Operations:
             print('Available Resources: 5%/0%; one minute: 6%; five minutes: 5%')
             logger.info('5%/0%; one minute: 6%; five minutes: 5%')
             return '5%/0%; one minute: 6%; five minutes: 5%'
+        else:
+            print(f'Unsupported device type {self.type}')
+            logger.warning(f'Unsupported device type {self.type}')
 
     def get_exposed_ports(self) -> str:
         """ Gathers Exposed Ports from server """
         if self.type == 'linux':
             exp_ports = 'None'
-            print('exposed ports are: ', str(exp_ports))
-            logger.info('exposed ports are: ', str(exp_ports))
+            print(f'exposed ports are: {exp_ports}')
+            logger.info(f'exposed ports are: {exp_ports}')
             return exp_ports
         if self.type == 'windows':
             session = winrm_session(self.username, self.password, self.host)
@@ -177,6 +187,9 @@ class Operations:
             print(f'No exposed ports found for: {self.host}')
             logger.info(f'No exposed ports found for: {self.host}')
             return 'None'
+        else:
+            print(f'Unsupported device type {self.type}')
+            logger.warning(f'Unsupported device type {self.type}')
 
 
 def happy_converter(text):
@@ -217,6 +230,8 @@ def main():
             results = []
             ops = Operations(username, password, server, type)
             uptime = ops.uptime()
+            if 'Unsupported' in uptime:
+                exit()
             results.append(uptime)
             version = ops.get_version()
             results.append(version)
