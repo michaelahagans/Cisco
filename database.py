@@ -11,7 +11,7 @@ def write_job(type, uptime, version, performance, exposed_ports, server, job_dat
 
     conn.execute('CREATE TABLE IF NOT EXISTS jobs(Type, Server, Date, Uptime, Version, Performance, EX_Ports)')
     conn.execute(f"INSERT INTO jobs(Type, Server, Date, Uptime, Version, Performance, EX_Ports)\
-        VALUES(\"{type}\" , \"{server}\" , \"{job_date}\", \"{uptime[0]}\", \"{version}\", \"{performance}\", \"{exposed_ports}\" )")
+        VALUES(\"{type}\" , \"{server}\" , \"{job_date}\", \"{uptime}\", \"{version}\", \"{performance}\", \"{exposed_ports}\" )")
 
     conn.commit()
     print('Records saved OK\n')

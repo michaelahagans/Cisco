@@ -1,2 +1,5 @@
 requests==2.27.1
 paramiko==2.10.3
+zeep==4.1.0
+pywinrm==0.4.3
+paramiko-expect==0.3.2
