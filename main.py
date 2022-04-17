@@ -16,62 +16,100 @@ import threading
 import paramiko
 import requests
 import database
+import zeep
 
 from datetime import *
 from paramiko_expect import SSHClientInteraction
+from service import soap_service, ssh_client_setup
 from socket import timeout
+from zeep import Client
+from zeep.cache import SqliteCache
+from zeep.transports import Transport
+from zeep.exceptions import Fault
+from zeep.plugins import HistoryPlugin
+from requests import Session
+from requests.auth import HTTPBasicAuth
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
+from lxml import etree
+
+disable_warnings(InsecureRequestWarning)
+
 
 logger = logging.getLogger()
 logging.basicConfig(filename='logs.log', format='%(lineno)s %(asctime)s %(filename)s: %(message)s', filemode='w')
 #logging.basicConfig(filename='logs.log', format='%(levelname)s: %(message)s', filemode='w')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Operations:
     """ Handles server connection and operations """
 
-    def __init__(self, username, password, host):
+    def __init__(self, username, password, host, type):
         self.username = username
         self.password = password
         self.host = host
+        self.type = type
         self.base_url = f'https://{host}:8443/axl/'
 
     def uptime(self) -> str :
-        """ Gathers Uptime from server via ssh """
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(hostname=self.host,username=self.username,password=self.password)
-        # remote_connection = ssh_client.invoke_shell()
-        interact = SSHClientInteraction(
-            ssh_client,timeout=20,display=False
-        )
+        """ Gathers Uptime from server """
+        if self.type == 'linux':
+            ssh_client, interact = ssh_client_setup(self.username, self.password, self.host)
+            interact.expect('admin:')
+            interact.send('show status')
+            interact.expect('admin:')
+            output = happy_converter(interact.current_output_clean)
+            match = re.findall("up[^,]*", output[10])
+            if match:
+                print(f'uptime is: {match[0]}')
+                logger.info(f'uptime is: {match[0]}')
+                return match
+            else:
+                print(f'uptime is: not found in output')
+                logger.info(f'Search for uptime unsuccessful: {self.host}')  
+            ssh_client.close()
+        if self.type == 'windows':
+            pass
+
+    def get_version(self) -> str:
+        """ Gathers Version from server """
+        try:
+            service = soap_service(self.username, self.password, self.host)
+            resp = service.getCCMVersion()
+            version = resp['return']['componentVersion']['version']
+            logger.info(f'System version found: {version}')
+            print(f'Version: {version}')
+            return version
+        except Fault as err:
+            print(f'Error getting version: {err}')
+            logger.warning(f'Error getting version: {err}')
+
+    def get_performance(self) -> list:
+        """ Gathers Performance from server """
+        ssh_client, interact = ssh_client_setup(self.username, self.password, self.host)
         interact.expect('admin:')
         interact.send('show status')
         interact.expect('admin:')
         output = happy_converter(interact.current_output_clean)
-        pattern = "up\s[0-9]*\s[a-z]*"
-        match = re.search(pattern, output[10])
-        if match:
-            print(f'uptime is: {match}')
-            logger.info(f'uptime is: {match}')
+        cpu_match = re.findall("CPU[^%]*%", output[12])
+        performance = []
+        if cpu_match:
+            print(f'CPU Idle is: {cpu_match[0]}')
+            logger.info(f'CPU Idle is: {cpu_match[0]}')
+            performance.append(cpu_match)
         else:
-            logger.warning(f'Search for uptime unsuccessful: {self.host}')  
-        ssh_client.close()          
-        return match
-
-    def get_version(self):
-        """ Gathers Version from server """
-        version = '11.5'
-        print('version is: ', str(version))
-        return version
-
-    def get_performance(self):
-        """ Gathers Performance from server """
-        performance = '35% CPU, 60% RAM'
-        print('performance is: ', str(performance))
+            print(f'CPU Idle is: not found in output')
+            logger.info(f'Search for CPU Idle unsuccessful: {self.host}')  
+        ram_match = re.findall("Free[^%]*", output[16])
+        if ram_match:
+            print(f'Free Memory is: {ram_match[0]}')
+            logger.info(f'Free Memory is: {ram_match[0]}')
+            performance.append(ram_match)
+        ssh_client.close()
         return performance
 
-    def get_exposed_ports(self):
+    def get_exposed_ports(self) -> str:
         """ Gathers Exposed Ports from server """
         exp_ports = 'None'
         print('exposed ports are: ', str(exp_ports))
@@ -101,14 +139,15 @@ def main():
         username = input('Enter username: ')
         password = input('Enter password: ')
         server = input('Enter IP address: ')
+        type = input('Enter server type (linux or windows): ')
         print('\n...one moment please.\n')
         try:
-            ops = Operations(username, password, server)
+            ops = Operations(username, password, server, type)
             uptime = ops.uptime()
             version = ops.get_version()
             performance = ops.get_performance()
             exposed_ports = ops.get_exposed_ports()
-            database.write_job(uptime, version, performance, exposed_ports,
+            database.write_job(type, uptime, version, performance, exposed_ports,
                                server, date.today().strftime("%Y%m%d"))
             email = email_results()
             if email == 'Unrecognized input for email':

@@ -1,17 +1,17 @@
 import sqlite3
 
 
-def write_job(uptime, version, performance, exposed_ports, server, job_date) -> str:
+def write_job(type, uptime, version, performance, exposed_ports, server, job_date) -> str:
     """ Used to create db file and tables """
     try:
         conn = sqlite3.connect('database.db')
-        print('Opened database OK\n')
+        print('Opened database OK')
     except Exception as err:
         print('Error connecting to database: %s',str(err))
 
-    conn.execute('CREATE TABLE IF NOT EXISTS jobs(Server, Date, Uptime, Version, Performance, EX_Ports)')
-    conn.execute(f"INSERT INTO jobs(Server, Date, Uptime, Version, Performance, EX_Ports)\
-        VALUES(\"{server}\" , \"{job_date}\", \"{uptime}\", \"{version}\", \"{performance}\", \"{exposed_ports}\" )")
+    conn.execute('CREATE TABLE IF NOT EXISTS jobs(Type, Server, Date, Uptime, Version, Performance, EX_Ports)')
+    conn.execute(f"INSERT INTO jobs(Type, Server, Date, Uptime, Version, Performance, EX_Ports)\
+        VALUES(\"{type}\" , \"{server}\" , \"{job_date}\", \"{uptime[0]}\", \"{version}\", \"{performance}\", \"{exposed_ports}\" )")
 
     conn.commit()
     print('Records saved OK\n')
