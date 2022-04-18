@@ -1,7 +1,7 @@
 """
 Script / Utility for Cisco Recruitment project 1
 
-Operation: The script will prompt for creds, ip and device type then perform operations, save to database and
+Operation: The script will prompt for credentials, ip and device type then perform operations, save to database and
 present the user with the option to email the results as well as view past successful jobs. 
 
 Initial Code write: Michael Hagans, 4.13.2022
@@ -12,6 +12,7 @@ from cgi import test
 from code import interact
 import csv
 import email
+from unittest import result
 from email_config import emailhtml
 import logging
 import os
@@ -202,13 +203,9 @@ def email_results(results):
     email = input('Would you like to email these results? Enter y/n: ')
     if email == 'y':
         email_address = input('Enter your email address: ')
-        # Enter valid email relay
-        email_relay = ''
-        if email_relay == '':
-            print('Please enter a valid email relay')
-        else:
-            send_email = emailhtml(results, email_address, email_relay)
-            print('Emailing your results...')
+        # TODO Enter valid email relay server or fqdn
+        mail_relay = ''
+        send_email = emailhtml(results, email_address, mail_relay)
     elif email == 'n':
         print('Script complete.\n')
     else:
@@ -239,6 +236,7 @@ def main():
             results.append(performance)
             exposed_ports = ops.get_exposed_ports()
             results.append(exposed_ports)
+            new_results = [x for x in results] # strictly made to illustrate a list comprehension for project1
             database.write_job(type, uptime, version, performance, exposed_ports,
                                server, date.today().strftime("%Y%m%d"))
             email = email_results(results)
