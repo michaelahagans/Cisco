@@ -1,7 +1,7 @@
 """
 Script / Utility for Cisco Recruitment project 1
 
-Operation: The script will prompt for credentials, ip and device type then perform operations, save to database and
+Operation: This script will prompt for credentials, ip and device type then perform operations, save to database and
 present the user with the option to email the results as well as view past successful jobs. 
 
 Initial Code write: Michael Hagans, 4.13.2022
