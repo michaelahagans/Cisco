@@ -8,7 +8,7 @@ from email.mime.text import MIMEText
 from attr import fields
 
 
-def emailhtml(results, email_address, mail_relay):
+def email_results(results, email_address, mail_relay):
     """ sends email with csv """
     try:
         fields = ['Uptime', 'Version', 'Performance', 'Exposed Ports']

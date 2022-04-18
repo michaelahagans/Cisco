@@ -13,7 +13,7 @@ from code import interact
 import csv
 import email
 from unittest import result
-from email_config import emailhtml
+from email_config import email_results
 import logging
 import os
 import re
@@ -85,6 +85,7 @@ class Operations:
             logger.info(f'Uptime is: {uptime}')
             return 'System Boot Time 4/16/2022, 6:49:04 AM'
         if self.type == 'ios':
+            """Boiler plate code commented out to make actual connection"""
             # ssh_client, interact = ssh_client_setup(
             #     self.username, self.password, self.host)
             # interact.expect('switch>')
@@ -117,6 +118,7 @@ class Operations:
             logger.info(f'Version is: {version}')
             return 'Windows Server 2019'
         if self.type == 'ios':
+            """Boiler plate code commented out to make actual connection"""
             # ssh_client, interact = ssh_client_setup(
             #     self.username, self.password, self.host)
             # interact.expect('switch>')
@@ -160,6 +162,7 @@ class Operations:
             print(f'Available Memory is: {avail_memory}')
             return 'Available Memory is: 9137 MB'
         if self.type == 'ios':
+            """Boiler plate code commented out to make actual connection"""
             # ssh_client, interact = ssh_client_setup(
             #     self.username, self.password, self.host)
             # interact.expect('switch>')
@@ -194,7 +197,7 @@ class Operations:
 
 
 def happy_converter(text):
-    """ returns plit lines"""
+    """ returns split lines"""
     return text.splitlines()
 
 
@@ -205,7 +208,7 @@ def email_results(results):
         email_address = input('Enter your email address: ')
         # TODO Enter valid email relay server or fqdn
         mail_relay = ''
-        send_email = emailhtml(results, email_address, mail_relay)
+        send_email = email_results(results, email_address, mail_relay)
     elif email == 'n':
         print('Script complete.\n')
     else:
