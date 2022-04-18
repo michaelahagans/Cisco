@@ -13,7 +13,7 @@ from code import interact
 import csv
 import email
 from unittest import result
-from email_config import email_results
+from email_config import email_ops
 import logging
 import os
 import re
@@ -208,7 +208,7 @@ def email_results(results):
         email_address = input('Enter your email address: ')
         # TODO Enter valid email relay server or fqdn
         mail_relay = ''
-        send_email = email_results(results, email_address, mail_relay)
+        send_email = email_ops(results, email_address, mail_relay)
     elif email == 'n':
         print('Script complete.\n')
     else:
